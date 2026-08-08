@@ -1,36 +1,14 @@
-import {
-  BodyComponent,
-  Canvas,
-  CollisionStartEvent,
-  CollisionType,
-  Entity,
-  EventTypes,
-  MotionComponent,
-  Shape,
-  Sprite,
-} from "excalibur";
-import type { ActorEvents, Collider, EventEmitter } from "excalibur";
+import { Canvas, Entity, Sprite } from "excalibur";
+import type { ActorEvents, EventEmitter } from "excalibur";
 import { RoadPositionComponent } from "../components/road-position-component";
 import { RoadGraphicsComponent } from "../components/road-graphics-component";
 import {
   ObstacleColliderComponent,
   RunnerState,
 } from "../components/obstacle-collider-component";
-import { RunnerStateComponent } from "../components/singletons/runner-state-component";
-import {
-  CameraPositionComponent,
-  getCameraPositionComponent,
-} from "../components/singletons/camera-position-component";
-import {
-  GameStateComponent,
-  getGameStateComponent,
-} from "../components/singletons/game-state-component";
-import { Runner } from "../interactions/runner";
-import { triggerGameOver } from "../interactions/game";
-import { resetWorld } from "../interactions/world";
-import { TILE_SIZE } from "../core/road-position";
-import { LANES } from "../core/road";
 import { Assets } from "../core/assets";
+import { LANES } from "../core/road";
+import { TILE_SIZE } from "../core/road-position";
 
 export class RoadEntity extends Entity {
   declare readonly events: EventEmitter<ActorEvents>;
@@ -47,79 +25,14 @@ export class RoadEntity extends Entity {
   }
 }
 
-/** 为障碍实体挂接碰撞处理：被 Runner 撞到时按状态分发 */
-function withObstacleCollisionHandling(entity: RoadEntity): RoadEntity {
-  entity.events.on(EventTypes.CollisionStart, (evt: CollisionStartEvent) => {
-    handleObstacleCollision(entity, evt.other);
-  });
-  return entity;
-}
-
-/**
- * 障碍物碰撞处理：被 Runner 撞到时，根据 Runner 状态决定奖励挑战分或游戏结束。
- * 由障碍实体的 CollisionStart 事件触发。
- */
-function handleObstacleCollision(entity: RoadEntity, other: Collider): void {
-  const obstacle = entity.get(ObstacleColliderComponent);
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!obstacle) return;
-
-  const runnerPosition = other.owner.get(RoadPositionComponent);
-  const runnerState = other.owner.get(RunnerStateComponent);
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!runnerPosition || !runnerState) return;
-
-  const { scene } = entity;
-  if (!scene) return;
-
-  const canAvoid =
-    (Runner.isCrouching(runnerPosition, runnerState) &&
-      obstacle.skippedStates.includes(RunnerState.Crouch)) ||
-    (Runner.isJumping(runnerPosition, runnerState) &&
-      obstacle.skippedStates.includes(RunnerState.Jump));
-
-  const gameStateQuery = scene.world.query([GameStateComponent]);
-  const gameState = getGameStateComponent(gameStateQuery);
-  if (canAvoid) {
-    if (gameState.gameStatus !== "tutorial") {
-      gameState.score.challenges += 2 * TILE_SIZE;
-    }
-    return;
-  }
-
-  if (gameState.gameStatus === "tutorial") {
-    // 教程状态：不结束游戏，立即整局重置（同 ResetSystem 的 gameOver 重置）。
-    // 道路、转弯状态（RoadTurnComponent）、生成器等全部从起点重新生成，
-    // 避免 turn.roadDist 停留在上一命已越过的转弯上，
-    // 导致后续转弯渲染错乱（转弯消失）且到达转弯前即被撞回起点。
-    resetWorld(scene.world);
-    getGameStateComponent(gameStateQuery).gameStatus = "tutorial";
-    return;
-  }
-
-  const runnerMotion = other.owner.get(MotionComponent);
-  triggerGameOver(
-    runnerPosition,
-    runnerMotion,
-    getCameraPositionComponent(scene.world.query([CameraPositionComponent])),
-    gameState,
-    entity.get(RoadPositionComponent).roadDist - 1,
-  );
-}
-
-/** 给障碍实体挂碰撞组件（collider + Passive body）并注册碰撞事件处理 */
+/** 为障碍实体挂碰撞标记组件（skippedStates 供躲避判定，laneRadius 供车道判定） */
 function withObstacleComponents(
   entity: RoadEntity,
-  collider: Collider,
   skippedStates: readonly RunnerState[],
+  laneRadius: number,
 ): RoadEntity {
-  for (const component of [
-    new ObstacleColliderComponent(collider, skippedStates),
-    new BodyComponent({ type: CollisionType.Passive }),
-  ]) {
-    entity.addComponent(component);
-  }
-  return withObstacleCollisionHandling(entity);
+  entity.addComponent(new ObstacleColliderComponent(skippedStates, laneRadius));
+  return entity;
 }
 
 // ── 视觉形状工厂 ─────────────────────────────────────────────
@@ -188,8 +101,8 @@ export function newGateEntity(lane: number, roadDist: number): RoadEntity {
       roadDist,
       makeUprightVisual(new Sprite({ image: Assets.images.gate }), GATE_HEIGHT),
     ),
-    Shape.Box(1, 5),
     [RunnerState.Crouch],
+    0,
   );
 }
 
@@ -204,8 +117,8 @@ export function newHurdleEntity(lane: number, roadDist: number): RoadEntity {
         HURDLE_HEIGHT,
       ),
     ),
-    Shape.Box(1, 5),
     [RunnerState.Jump],
+    0,
   );
 }
 
@@ -306,29 +219,21 @@ function wrapText(
 }
 
 export function newTurnEntity(roadDist: number): RoadEntity {
+  // 横跨全部车道（LANES=3 时半径 1，lane 1 覆盖 0..2）
   return withObstacleComponents(
     new RoadEntity(1, roadDist),
-    Shape.Box(2, 5),
     [],
+    (LANES - 1) / 2,
   );
 }
 
 export function newTutorialEndEntity(roadDist: number): RoadEntity {
+  // 标记：MovingSystem 据此区分教程终点与普通转弯标记
   const entity = withObstacleComponents(
     new RoadEntity(1, roadDist),
-    Shape.Box(2, 5),
     [],
+    (LANES - 1) / 2,
   );
-  entity.events.on(EventTypes.CollisionStart, (evt: CollisionStartEvent) => {
-    const runnerState = evt.other.owner.get(RunnerStateComponent);
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!runnerState) return;
-
-    const { scene } = entity;
-    if (!scene) return;
-
-    getGameStateComponent(scene.world.query([GameStateComponent])).gameStatus =
-      "gaming";
-  });
+  entity.addTag("tutorial-end");
   return entity;
 }
