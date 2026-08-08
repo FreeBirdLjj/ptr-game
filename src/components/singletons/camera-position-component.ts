@@ -10,7 +10,7 @@ import {
  * 继承 TransformComponent，roadDist → pos.y，
  * 以便 MotionSystem 可以通过 TransformComponent 推动摄像机。
  *
- * 挂载于 CameraEntity，由 CameraMovingSystem 驱动。
+ * 挂载于 CameraEntity，由 MovingSystem 驱动。
  */
 export class CameraPositionComponent extends TransformComponent {
   constructor() {

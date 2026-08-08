@@ -5,7 +5,8 @@ export type GameStatus = "tutorial" | "gaming" | "gameOver";
 
 export class GameStateComponent extends Component {
   gameStatus: GameStatus = "gaming";
-  elapsedTime = 0;
+  /** 游戏经过时间（毫秒） */
+  elapsedMs = 0;
   rng = new Random();
   /** 由 RoadConstructionSystem 在更新时惰性初始化 */
   roadGenerator?: ReturnType<typeof makeRoadGenerator>;

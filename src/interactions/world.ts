@@ -16,7 +16,7 @@ import {
 } from "excalibur";
 import { RoadGraphicsUpdateSystem } from "../systems/road-graphics-update-system";
 import { RoadCleaningSystem } from "../systems/road-cleaning-system";
-import { CameraMovingSystem } from "../systems/camera-moving-system";
+import { MovingSystem } from "../systems/moving-system";
 import { RoadConstructionSystem } from "../systems/road-construction-system";
 import { RunnerSystem } from "../systems/runner-system";
 import { UIUpdateSystem } from "../systems/ui-update-system";
@@ -160,7 +160,7 @@ export function setupWorldSystems(world: World): void {
     new RoadConstructionSystem(),
     new RoadGraphicsUpdateSystem(),
     new RoadCleaningSystem(),
-    new CameraMovingSystem(),
+    new MovingSystem(),
     new RunnerSystem(),
     new UIUpdateSystem(),
     new ResetSystem(),
