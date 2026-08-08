@@ -18,10 +18,7 @@ import { RoadCleaningSystem } from "../../src/systems/road-cleaning-system";
 import { MovingSystem } from "../../src/systems/moving-system";
 import { RunnerSystem } from "../../src/systems/runner-system";
 import { teleportTo } from "../../src/interactions/game";
-import type {
-  MotionComponent,
-  GameStateComponent as GameStateType,
-} from "excalibur";
+import type { MotionComponent } from "excalibur";
 
 // happy-dom 无 canvas 2d context，用 Proxy 兜底所有方法（resetWorld 会重建背景/UI 实体）
 HTMLCanvasElement.prototype.getContext = (() =>
@@ -59,7 +56,7 @@ vi.mock("../../src/interactions/game", async (importOriginal) => {
       runnerPosition: RoadPositionComponent,
       runnerMotion: MotionComponent,
       cameraPosition: CameraPositionComponent,
-      gameState: GameStateType,
+      gameState: GameStateComponent,
       backToRoadDist?: number,
     ) => {
       gameOverHits.push({
