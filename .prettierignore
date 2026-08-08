@@ -1,3 +1,6 @@
 # Ignore artifacts:
 build
 coverage
+
+# Machine-generated lockfile (pnpm's own quoting style):
+pnpm-lock.yaml
