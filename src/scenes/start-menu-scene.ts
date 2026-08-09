@@ -23,7 +23,10 @@ export class StartMenuScene extends Scene {
   override onInitialize(): void {
     this.backgroundColor = Color.fromHex("#0f0f23");
 
-    const midX = this.engine.canvas.width / 2;
+    // 注意：必须用逻辑分辨率 drawWidth（=600），不能用 canvas.width——
+    // canvas.width 是物理像素背板（= drawWidth × devicePixelRatio），
+    // 手机上 DPR≥2 时会把 UI 定位到画布右侧屏幕外（看不到任何字/按钮）
+    const midX = this.engine.screen.drawWidth / 2;
 
     this.add(createTitle(midX));
 
