@@ -96,7 +96,7 @@ function makeBaseScene(systems: unknown[]): Scene {
   const scene = new Scene();
   // resetWorld 会读取 engine.screen 的尺寸，未挂 engine 时用固定逻辑分辨率
   (scene as unknown as { engine: unknown }).engine = {
-    screen: { drawWidth: 600, drawHeight: 800 },
+    screen: { drawWidth: 600, drawHeight: 800, pixelRatio: 1 },
     stats: { currFrame: { actors: { killed: 0 }, systemDuration: {} } },
   };
   const systemManager = scene.world.systemManager as unknown as {

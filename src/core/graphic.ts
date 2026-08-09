@@ -64,9 +64,13 @@ function outsetTriangle(
  * graphic.draw()（无离屏渲染，直接画在当前矩阵上）；帧裁剪由 Graphic
  * 自身管理（Sprite.sourceView / Animation）。
  *
- * 注意：进入本函数时 ex.__ctx 可能带有外层变换（GraphicsSystem 会对实体施加
- * translate(lane, roadDist)），clip 路径必须建立在绝对屏幕坐标上——
- * 先 setTransform(identity) 再描路径，否则裁剪区域整体偏移、图形不可见。
+ * 四个顶点为绝对屏幕坐标（逻辑分辨率空间，如 600×800 游戏画布）。进入本函数时
+ * ex.__ctx 带有 Excalibur 的完整变换栈：pixelRatio 缩放 ∘ contentArea ∘ 实体变换。
+ * 其中实体变换 translate(lane, roadDist) 是游戏逻辑坐标（道路坐标系），对屏幕
+ * 绘制毫无意义，必须丢弃——因此这里 setTransform 只保留 pixelRatio 缩放：
+ * 绝不能用 identity，否则移动端 DPR≥2 时绝对屏幕坐标会被当作物理像素直接绘制
+ * （图形缩至 1/2、挤在左上 1/4 屏幕）。仿射矩阵用 ctx.transform 在当前
+ * （pixelRatio 缩放）变换上复合。
  */
 export function drawGraphic(
   ex: ExcaliburGraphicsContext2DCanvas,
@@ -75,6 +79,7 @@ export function drawGraphic(
   br: Vector,
   tl: Vector,
   tr: Vector,
+  pixelRatio: number,
 ): void {
   const w = graphic.width;
   const h = graphic.height;
@@ -91,15 +96,26 @@ export function drawGraphic(
   for (const [p0, p1, p2, t0, t1, t2] of triangles) {
     const [c0, c1, c2] = outsetTriangle(p0, p1, p2);
     ctx.save();
-    // clip 路径使用绝对屏幕坐标（清除 GraphicsSystem 施加的外层变换）
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // 丢弃实体变换（translate(lane, roadDist) 是逻辑坐标，不能参与屏幕绘制），
+    // 只保留 Excalibur Screen 施加的 pixelRatio 缩放；clip 路径与仿射矩阵都用
+    // 绝对屏幕坐标，在 pixelRatio 变换下二者必然对齐（见函数注释）
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     ctx.beginPath();
     ctx.moveTo(c0.x, c0.y);
     ctx.lineTo(c1.x, c1.y);
     ctx.lineTo(c2.x, c2.y);
     ctx.closePath();
     ctx.clip();
-    ctx.setTransform(solveAffine(p0, p1, p2, t0, t1, t2).toDOMMatrix());
+    // 在当前变换（pixelRatio 缩放）上复合仿射，纹理点落到 P·屏幕坐标
+    const m = solveAffine(p0, p1, p2, t0, t1, t2);
+    ctx.transform(
+      m.data[0],
+      m.data[1],
+      m.data[2],
+      m.data[3],
+      m.data[4],
+      m.data[5],
+    );
     graphic.draw(ex, 0, 0);
     ctx.restore();
   }

@@ -72,12 +72,13 @@ export class RoadGraphicsComponent extends GraphicsComponent {
   }
 
   /** 把世界坐标投影为屏幕坐标写入 quad（由 RoadGraphicsUpdateSystem 每帧调用） */
-  updateWorldVertices(proj: RoadProjection): void {
+  updateWorldVertices(proj: RoadProjection, pixelRatio: number): void {
     this.quad.updateScreenVertices(
       proj.project(...this._bl),
       proj.project(...this._br),
       proj.project(...this._tl),
       proj.project(...this._tr),
+      pixelRatio,
     );
   }
 }

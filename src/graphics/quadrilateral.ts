@@ -10,10 +10,11 @@ import { drawGraphic } from "../core/graphic";
  * 四边形 Graphic：不做栅格化，直接把纹理（任意 Graphic，如 Sprite/Animation）
  * 以仿射纹理映射绘制到 (bl, br, tl, tr) 四个顶点定义的四边形上。
  *
- * _drawImage 时从 ExcaliburGraphicsContext2DCanvas.__ctx 取出
- * CanvasRenderingContext2D，连同 texture 与四个顶点交给 drawGraphic 绘制。
- * 四个顶点为绝对屏幕坐标（drawGraphic 内部 setTransform 会覆盖 Graphic 的
- * 位移/旋转/缩放变换），由 RoadGraphicsUpdateSystem 每帧写入。
+ * 四个顶点为绝对屏幕坐标（逻辑分辨率空间，由 RoadGraphicsUpdateSystem 每帧
+ * 投影写入）。_drawImage 时从 ExcaliburGraphicsContext2DCanvas.__ctx 取出
+ * CanvasRenderingContext2D，连同 texture、四个顶点与 pixelRatio 交给
+ * drawGraphic 绘制——drawGraphic 丢弃实体变换（逻辑坐标），只保留
+ * pixelRatio 缩放，因此本 Graphic 的位移/旋转/缩放变换不参与绘制。
  *
  * 仅在 2D canvas 渲染器下可用；非 ExcaliburGraphicsContext2DCanvas 时静默跳过。
  */
@@ -23,6 +24,13 @@ export class Quadrilateral extends Graphic {
   private _br: Vector;
   private _tl: Vector;
   private _tr: Vector;
+  /**
+   * 屏幕 pixelRatio（物理像素 / 逻辑像素）：绘制时以此缩放绝对屏幕坐标，丢弃
+   * 实体变换（translate(lane, roadDist) 是逻辑坐标，不参与屏幕绘制）。
+   * 由 RoadGraphicsUpdateSystem 每帧随顶点一起传入（updateScreenVertices）。
+   * 桌面 DPR=1 时为 1，等于 identity。
+   */
+  private _pixelRatio = 1;
 
   constructor(
     texture: Graphic,
@@ -50,12 +58,19 @@ export class Quadrilateral extends Graphic {
     this.height = texture.height;
   }
 
-  /** 更新四个顶点（绝对屏幕坐标），由 RoadGraphicsUpdateSystem 每帧调用 */
-  updateScreenVertices(bl: Vector, br: Vector, tl: Vector, tr: Vector): void {
+  /** 更新四个顶点与 pixelRatio（绝对屏幕坐标），由 RoadGraphicsUpdateSystem 每帧调用 */
+  updateScreenVertices(
+    bl: Vector,
+    br: Vector,
+    tl: Vector,
+    tr: Vector,
+    pixelRatio: number,
+  ): void {
     this._bl = bl;
     this._br = br;
     this._tl = tl;
     this._tr = tr;
+    this._pixelRatio = pixelRatio;
   }
 
   /**
@@ -76,18 +91,28 @@ export class Quadrilateral extends Graphic {
     _y: number,
   ): void {
     if (!(ex instanceof ExcaliburGraphicsContext2DCanvas)) return;
-    drawGraphic(ex, this._texture, this._bl, this._br, this._tl, this._tr);
+    drawGraphic(
+      ex,
+      this._texture,
+      this._bl,
+      this._br,
+      this._tl,
+      this._tr,
+      this._pixelRatio,
+    );
   }
 
   clone(): Quadrilateral {
     // 纹理也 clone：与顶点一致保持副本独立（Animation 独立帧/播放状态，
     // Sprite/Canvas 底层资源不复制），否则两个副本共享动画状态会同步播放
-    return new Quadrilateral(
+    const clone = new Quadrilateral(
       this._texture.clone(),
       this._bl.clone(),
       this._br.clone(),
       this._tl.clone(),
       this._tr.clone(),
     );
+    clone._pixelRatio = this._pixelRatio;
+    return clone;
   }
 }
