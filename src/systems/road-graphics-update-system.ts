@@ -36,8 +36,10 @@ export class RoadGraphicsUpdateSystem extends System {
   >;
   private camQuery!: Query<typeof CameraPositionComponent>;
   private turnQuery!: Query<typeof RoadTurnComponent>;
+  private scene!: Scene;
 
-  override initialize(world: World, _scene: Scene): void {
+  override initialize(world: World, scene: Scene): void {
+    this.scene = scene;
     this.roadObjectQuery = world.query([
       RoadPositionComponent,
       RoadGraphicsComponent,
@@ -81,7 +83,9 @@ export class RoadGraphicsUpdateSystem extends System {
         camZ,
         entityTurnDir,
       );
-      graphics.updateWorldVertices(proj);
+      // pixelRatio 随顶点一起传入：Quadrilateral 绘制时保留 DPR 缩放、
+      // 丢弃实体变换（translate(lane, roadDist) 是逻辑坐标，不参与屏幕绘制）
+      graphics.updateWorldVertices(proj, this.scene.engine.screen.pixelRatio);
 
       pos.z = AbsoluteProjection.MAX_Z - relZ + graphics.priority;
     }
