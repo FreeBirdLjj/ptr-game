@@ -4,23 +4,30 @@ import {
   CameraPositionComponent,
   getCameraPositionComponent,
 } from "../components/singletons/camera-position-component";
+import {
+  RoadTurnComponent,
+  getRoadTurnComponent,
+} from "../components/singletons/road-turn-component";
 import { WithGameStateFilter } from "./util";
 import { TILE_SIZE } from "../core/road-position";
 
 /**
  * 统一的道路实体回收系统。
  *
- * 每帧查询所有带 RoadPosition 的实体，将摄像机后方（roadDist + TILE_SIZE < camZ）的实体清理掉。
+ * 每帧查询所有带 RoadPosition 的实体，将摄像机后方（roadDist + TILE_SIZE < camZ）的实体清理掉；
+ * 转弯点列表（RoadTurnComponent）用同一条件清理。
  */
 export class RoadCleaningSystem extends WithGameStateFilter(System) {
   override systemType = SystemType.Update;
 
   private roadPosQuery!: Query<typeof RoadPositionComponent>;
   private camQuery!: Query<typeof CameraPositionComponent>;
+  private turnQuery!: Query<typeof RoadTurnComponent>;
 
   override onInitialize(world: World, _scene: Scene): void {
     this.roadPosQuery = world.query([RoadPositionComponent]);
     this.camQuery = world.query([CameraPositionComponent]);
+    this.turnQuery = world.query([RoadTurnComponent]);
   }
 
   override gameStatusHandlers = {
@@ -34,6 +41,8 @@ export class RoadCleaningSystem extends WithGameStateFilter(System) {
           entity.kill();
         }
       }
+
+      getRoadTurnComponent(this.turnQuery).removePassedTurns(camZ);
     },
   };
 }

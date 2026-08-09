@@ -49,6 +49,7 @@ export class RoadGraphicsUpdateSystem extends System {
   update(_elapsed: number): void {
     const camZ = getCameraPositionComponent(this.camQuery).roadDist;
     const turn = getRoadTurnComponent(this.turnQuery);
+    const nextTurn = turn.nextTurn(camZ);
 
     for (const entity of this.roadObjectQuery.entities) {
       if (!entity.isActive) continue;
@@ -58,12 +59,14 @@ export class RoadGraphicsUpdateSystem extends System {
       const geometricCenter = roadPositionTo3D(
         pos.lane,
         pos.roadDist,
-        turn.roadDist,
-        turn.dir,
+        nextTurn.roadDist,
+        nextTurn.dir,
         camZ,
       );
-      const turnDir =
-        pos.roadDist >= turn.roadDist && turn.roadDist > camZ ? turn.dir : null;
+      const entityTurnDir =
+        pos.roadDist >= nextTurn.roadDist && nextTurn.roadDist > camZ
+          ? nextTurn.dir
+          : null;
 
       const relZ = geometricCenter.z - camZ;
       const visible =
@@ -76,7 +79,7 @@ export class RoadGraphicsUpdateSystem extends System {
         geometricCenter.x,
         geometricCenter.z,
         camZ,
-        turnDir,
+        entityTurnDir,
       );
       graphics.updateWorldVertices(proj);
 

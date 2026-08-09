@@ -16,6 +16,7 @@ import {
 import { GameStateComponent } from "../../src/components/singletons/game-state-component";
 import { RoadConstructionSystem } from "../../src/systems/road-construction-system";
 import { roadPositionTo3D, TILE_SIZE } from "../../src/core/road-position";
+import { TurnDir } from "../../src/core/road";
 
 // road 实体的 Canvas 纹理在构造时需要 2d context（Raster 构造只检查非 null），
 // happy-dom 的 canvas 不支持，这里 stub 掉（与 game-over-board 测试同款做法）
@@ -117,13 +118,16 @@ function collectTiles(
   camZ: number,
 ): TileInfo[] {
   const tiles: TileInfo[] = [];
+  const nextTurn = turn.nextTurn(camZ);
+  const turnRoadDist = nextTurn.roadDist;
+  const turnDir = nextTurn.dir;
   for (const entity of world.query([RoadPositionComponent]).entities) {
     const pos = entity.get(RoadPositionComponent);
     const w = roadPositionTo3D(
       pos.lane,
       pos.roadDist,
-      turn.roadDist,
-      turn.dir,
+      turnRoadDist,
+      turnDir,
       camZ,
     );
     const effZ = w.z - camZ;
@@ -179,11 +183,12 @@ function validate(
   for (const [zKey, row] of byZ) {
     // Skip turn fan area — tiles here are diagonal, not in straight rows
     const worldZ = zKey + camZ;
-    const active = turn.roadDist > camZ;
+    const nextTurn = turn.nextTurn(camZ);
+    const active = nextTurn.roadDist > camZ;
     if (
       active &&
-      worldZ >= turn.roadDist - TILE_SIZE &&
-      worldZ <= turn.roadDist + 2 * TILE_SIZE
+      worldZ >= nextTurn.roadDist - TILE_SIZE &&
+      worldZ <= nextTurn.roadDist + 2 * TILE_SIZE
     ) {
       continue;
     }
@@ -208,8 +213,8 @@ function validate(
       const expected = roadPositionTo3D(
         t.lane,
         t.roadDist,
-        turn.roadDist,
-        turn.dir,
+        nextTurn.roadDist,
+        nextTurn.dir,
         camZ,
       );
       if (

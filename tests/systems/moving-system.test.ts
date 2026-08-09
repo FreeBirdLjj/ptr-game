@@ -12,6 +12,8 @@ import {
   getGameStateComponent,
 } from "../../src/components/singletons/game-state-component";
 import { ObstacleColliderComponent } from "../../src/components/obstacle-collider-component";
+import { RunnerStateComponent } from "../../src/components/singletons/runner-state-component";
+import { RunnerState } from "../../src/components/obstacle-collider-component";
 import { RoadConstructionSystem } from "../../src/systems/road-construction-system";
 import { RoadGraphicsUpdateSystem } from "../../src/systems/road-graphics-update-system";
 import { RoadCleaningSystem } from "../../src/systems/road-cleaning-system";
@@ -88,11 +90,7 @@ vi.mock("../../src/core/scoreboard", async (importOriginal) => {
   };
 });
 
-function setupGame(seed: number): {
-  scene: Scene;
-  runner: Entity;
-  camera: CameraPositionComponent;
-} {
+function makeBaseScene(systems: unknown[]): Scene {
   const scene = new Scene();
   // resetWorld 会读取 engine.screen 的尺寸，未挂 engine 时用固定逻辑分辨率
   (scene as unknown as { engine: unknown }).engine = {
@@ -125,16 +123,28 @@ function setupGame(seed: number): {
     pointers: {},
   };
 
-  for (const system of [
+  // 与 main.ts 一致：物理 substep=8
+  scene.physics.config.substep = 8;
+
+  for (const system of systems) {
+    scene.world.add(system);
+  }
+  systemManager.initialize();
+  return scene;
+}
+
+function setupGame(seed: number): {
+  scene: Scene;
+  runner: Entity;
+  camera: CameraPositionComponent;
+} {
+  const scene = makeBaseScene([
     new RoadConstructionSystem(),
     new RoadGraphicsUpdateSystem(),
     new RoadCleaningSystem(),
     new MovingSystem(),
     new RunnerSystem(),
-  ]) {
-    scene.world.add(system);
-  }
-  systemManager.initialize();
+  ]);
 
   scene.world.add(new SingletonEntity());
   const gameState = getGameStateComponent(
@@ -191,19 +201,20 @@ describe("MovingSystem", () => {
         const turn = getRoadTurnComponent(
           scene.world.query([RoadTurnComponent]),
         );
+        const nextTurn = turn.nextTurn(runnerPosition.roadDist);
 
         // 模拟转弯：切场景冻结 30 帧后瞬移过弯（对应真实动画流程）
         if (
           !turnCompleted &&
-          turn.roadDist > 0 &&
-          runnerPosition.roadDist > turn.roadDist - 600 &&
-          runnerPosition.roadDist < turn.roadDist
+          nextTurn.roadDist > 0 &&
+          runnerPosition.roadDist > nextTurn.roadDist - 600 &&
+          runnerPosition.roadDist < nextTurn.roadDist
         ) {
-          turnRoadDist = turn.roadDist;
+          turnRoadDist = nextTurn.roadDist;
           for (let frozenFrame = 0; frozenFrame < 30; frozenFrame++) {
             scene.world.update(SystemType.Update, FRAME_MS);
           }
-          teleportTo(runnerPosition, camera, turn.roadDist + 6);
+          teleportTo(runnerPosition, camera, nextTurn.roadDist + 6);
           turnCompleted = true;
         }
 
@@ -285,6 +296,92 @@ describe("MovingSystem", () => {
       expect(recordScoreCalls.length).toBe(1);
       // gaming 模式无输入：challenges = 0，recordScore 与 UI 显示的 totalScore 同源
       expect(recordScoreCalls[0]).toBe(Math.floor(lastDist));
+    });
+  });
+
+  describe("turn failure death position", () => {
+    it("过第一个弯后，第二个弯失败死亡：前方最近弯不应错位（回归）", () => {
+      mockState.callOriginalTriggerGameOver = true;
+      const { scene, runner, camera } = setupGame(42);
+
+      // 记录依次成为“前方最近弯”的转弯点
+      const turnsSeen: number[] = [];
+      let turnACrossed = false;
+      let turnRoadDistAtDeath = -1;
+      const maxFrames = 60 * 60 * 30;
+      for (let frame = 0; frame < maxFrames; frame++) {
+        const turn = getRoadTurnComponent(
+          scene.world.query([RoadTurnComponent]),
+        );
+        const runnerPosition = runner.get(RoadPositionComponent);
+        const nextTurn = turn.nextTurn(runnerPosition.roadDist);
+        if (
+          nextTurn.roadDist > 0 &&
+          turnsSeen[turnsSeen.length - 1] !== nextTurn.roadDist
+        ) {
+          turnsSeen.push(nextTurn.roadDist);
+        }
+
+        // 过第一个弯：进入窗口时瞬移过弯（模拟转弯成功）
+        if (
+          !turnACrossed &&
+          turnsSeen.length >= 1 &&
+          runnerPosition.roadDist > turnsSeen[0] - 600 &&
+          runnerPosition.roadDist < turnsSeen[0]
+        ) {
+          teleportTo(runnerPosition, camera, turnsSeen[0] + 6);
+          turnACrossed = true;
+        }
+        // 第二个弯：故意不按键（转弯失败）
+
+        // 过弯前模拟躲避：接近同车道障碍时跳/蹲，保证活到第一个弯
+        const inFirstTurnWindow =
+          turnsSeen.length >= 1 &&
+          runnerPosition.roadDist > turnsSeen[0] - 600 &&
+          runnerPosition.roadDist < turnsSeen[0];
+        if (!inFirstTurnWindow) {
+          const runnerState = runner.get(RunnerStateComponent);
+          for (const entity of scene.world.query([RoadPositionComponent])
+            .entities) {
+            if (entity.get(ObstacleColliderComponent) === undefined) continue;
+            const obstacle = entity.get(ObstacleColliderComponent);
+            if (obstacle.skippedStates.length === 0) continue;
+            const position = entity.get(RoadPositionComponent);
+            const gap = position.roadDist - runnerPosition.roadDist;
+            if (gap > 0 && gap < 60 && position.lane === runnerPosition.lane) {
+              if (obstacle.skippedStates.includes(RunnerState.Jump)) {
+                runnerState.jumpStart = runnerPosition.roadDist;
+                runnerState.jumpEnd = runnerPosition.roadDist + 300;
+              } else if (obstacle.skippedStates.includes(RunnerState.Crouch)) {
+                runnerState.crouchStart = runnerPosition.roadDist;
+                runnerState.crouchEnd = runnerPosition.roadDist + 300;
+              }
+            }
+          }
+        }
+
+        scene.world.update(SystemType.Update, FRAME_MS);
+        const gameState = getGameStateComponent(
+          scene.world.query([GameStateComponent]),
+        );
+        if (gameState.gameStatus === "gameOver") {
+          turnRoadDistAtDeath = getRoadTurnComponent(
+            scene.world.query([RoadTurnComponent]),
+          ).nextTurn(runner.get(RoadPositionComponent).roadDist).roadDist;
+          break;
+        }
+      }
+
+      // 玩家撞在第二个弯（turnsSeen[1]）处死亡
+      expect(turnACrossed).toBe(true);
+      expect(runner.get(RoadPositionComponent).roadDist).toBe(turnsSeen[1] - 1);
+      // 关键：死亡时「当前转弯」应仍是第二个弯，不得提前推进到第三个
+      expect(turnRoadDistAtDeath).toBe(turnsSeen[1]);
+      // 定格画面：camera 与 runner 同步停在弯前（不因只停 runner 速度而多走一帧）
+      const cameraPosition = scene.world
+        .query([CameraPositionComponent])
+        .entities[0].get(CameraPositionComponent);
+      expect(cameraPosition.roadDist).toBe(turnsSeen[1] - 1);
     });
   });
 });

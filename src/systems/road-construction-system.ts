@@ -87,7 +87,7 @@ export class RoadConstructionSystem extends WithGameStateFilter(System) {
     const turn = getRoadTurnComponent(this.turnQuery);
     const camZ = getCameraPositionComponent(this.camQuery).roadDist;
 
-    if (turn.roadDist > camZ) return;
+    if (turn.nextTurn(camZ).roadDist > camZ) return;
 
     const maxZ = camZ + AbsoluteProjection.MAX_Z;
 
@@ -103,9 +103,12 @@ export class RoadConstructionSystem extends WithGameStateFilter(System) {
           this.constructTutorialRoadSegment(segment, gameState, turn);
           break;
       }
+      const nextTurn = turn.nextTurn(camZ);
+      const turnRoadDist = nextTurn.roadDist;
+      const turnDir = nextTurn.dir;
       const rd = (segment[0] + 0.5) * TILE_SIZE;
-      const { x, z } = roadPositionTo3D(1, rd, turn.roadDist, turn.dir, camZ);
-      const hasNewTurn = rd >= turn.roadDist && turn.roadDist > camZ;
+      const { x, z } = roadPositionTo3D(1, rd, turnRoadDist, turnDir, camZ);
+      const hasNewTurn = rd >= turnRoadDist && turnRoadDist > camZ;
       if (hasNewTurn) {
         if (Math.abs(x) >= 1000) break;
       } else if (z >= maxZ) {
@@ -130,8 +133,7 @@ export class RoadConstructionSystem extends WithGameStateFilter(System) {
     }
 
     if (dir !== "straight") {
-      turn.roadDist = idx * TILE_SIZE;
-      turn.dir = dir;
+      turn.addTurn(idx * TILE_SIZE, dir);
       this.addTurnEntity(idx);
     }
   }
@@ -159,8 +161,7 @@ export class RoadConstructionSystem extends WithGameStateFilter(System) {
     }
 
     if (dir !== "straight") {
-      turn.roadDist = idx * TILE_SIZE;
-      turn.dir = dir;
+      turn.addTurn(idx * TILE_SIZE, dir);
       this.addTurnEntity(idx);
     }
   }

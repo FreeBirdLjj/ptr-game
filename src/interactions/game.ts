@@ -1,4 +1,4 @@
-import type { MotionComponent } from "excalibur";
+import { MotionComponent } from "excalibur";
 import type { RoadPositionComponent } from "../components/road-position-component";
 import type { CameraPositionComponent } from "../components/singletons/camera-position-component";
 import type { GameStateComponent } from "../components/singletons/game-state-component";
@@ -24,6 +24,9 @@ export function triggerGameOver(
   if (gameState.gameStatus === "gameOver") return;
   gameState.gameStatus = "gameOver";
   runnerMotion.vel.y = 0;
+  // 摄像机同步停止：否则它会在下一帧物理推进一帧位移，与已停止的 runner 脱节
+  // （CameraEntity 构造保证 MotionComponent 存在，见 camera-entity.ts）
+  cameraPosition.owner!.get(MotionComponent).vel.y = 0;
   if (backToRoadDist !== undefined) {
     const target = Math.min(runnerPosition.roadDist, backToRoadDist);
     teleportTo(runnerPosition, cameraPosition, target);
