@@ -58,6 +58,7 @@ vi.mock("../../src/interactions/game", async (importOriginal) => {
       runnerPosition: RoadPositionComponent,
       runnerMotion: MotionComponent,
       cameraPosition: CameraPositionComponent,
+      _cameraMotion: MotionComponent,
       gameState: GameStateComponent,
       backToRoadDist?: number,
     ) => {
@@ -70,6 +71,7 @@ vi.mock("../../src/interactions/game", async (importOriginal) => {
           runnerPosition,
           runnerMotion,
           cameraPosition,
+          _cameraMotion,
           gameState,
           backToRoadDist,
         );

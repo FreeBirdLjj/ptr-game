@@ -16,7 +16,6 @@ import {
 import { GameStateComponent } from "../../src/components/singletons/game-state-component";
 import { RoadConstructionSystem } from "../../src/systems/road-construction-system";
 import { roadPositionTo3D, TILE_SIZE } from "../../src/core/road-position";
-import { TurnDir } from "../../src/core/road";
 
 // road 实体的 Canvas 纹理在构造时需要 2d context（Raster 构造只检查非 null），
 // happy-dom 的 canvas 不支持，这里 stub 掉（与 game-over-board 测试同款做法）
@@ -238,7 +237,7 @@ describe("RoadConstructionSystem 10-turn endurance", () => {
       system.update(16);
       step++;
 
-      if (turn.nextTurn(camera.roadDist)?.roadDist !== prevTurnRd) {
+      if (turn.nextTurn(camera.roadDist).roadDist !== prevTurnRd) {
         turnCount++;
         prevTurnRd = turn.nextTurn(camera.roadDist).roadDist;
         errors.push(
