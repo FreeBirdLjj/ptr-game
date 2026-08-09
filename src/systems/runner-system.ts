@@ -80,15 +80,16 @@ export class RunnerSystem extends WithGameStateFilter(System) {
       RoadPositionComponent,
     );
 
-    // 转弯检测
+    // 转弯检测：runner 前方最近的弯（nextTurn 与构造推进时机无关）
     const turn = getRoadTurnComponent(this.turnQuery);
     const rd = runnerPosition.roadDist;
+    const nextTurn = turn.nextTurn(rd);
     if (
-      turn.roadDist > 0 &&
-      rd > turn.roadDist - LANES * TILE_SIZE &&
-      rd < turn.roadDist
+      nextTurn.roadDist > 0 &&
+      rd > nextTurn.roadDist - LANES * TILE_SIZE &&
+      rd < nextTurn.roadDist
     ) {
-      const roadTurnDir = turn.dir;
+      const roadTurnDir = nextTurn.dir;
       let runnerTurnDir: TurnDir | null = null;
 
       if (this.keyboard.wasPressed(Keys.Left)) {

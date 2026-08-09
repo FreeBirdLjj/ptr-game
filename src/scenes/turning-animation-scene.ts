@@ -133,7 +133,10 @@ export class TurningAnimationScene extends Scene<TurningAnimationData> {
     const cameraPosition = getCameraPositionComponent(cameraPositionQuery);
     const turn = getRoadTurnComponent(turnQuery);
 
-    teleportTo(runnerPosition, cameraPosition, turn.roadDist + 6);
+    // 瞬移到正在完成的弯（runner 前方最近的弯）之后
+    const nextTurn = turn.nextTurn(cameraPosition.roadDist);
+    if (nextTurn.roadDist === -Infinity) return;
+    teleportTo(runnerPosition, cameraPosition, nextTurn.roadDist + 6);
   }
 }
 
