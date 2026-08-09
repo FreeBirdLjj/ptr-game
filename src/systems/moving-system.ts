@@ -186,6 +186,7 @@ export class MovingSystem extends WithGameStateFilter(System) {
       runnerPosition,
       runnerMotion,
       getCameraPositionComponent(this.cameraQuery),
+      this.cameraQuery.entities[0].get(MotionComponent),
       gameState,
       obstacleRoadDist - 1,
     );
