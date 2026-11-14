@@ -109,16 +109,14 @@ function createBackgroundEntity(
   const graphics = new GraphicsComponent({
     graphics: { default: rect },
     anchor: vec(0, 0),
+    onPreDraw: () => {
+      const w = scene.engine.screen.drawWidth;
+      const h = scene.engine.screen.drawHeight;
+      const height = getHeight(h);
+      if (rect.width !== w) rect.width = w;
+      if (rect.height !== height) rect.height = height;
+    },
   });
-  // 注意：不能在构造 options 里传 onPreDraw——Excalibur 0.32 构造末尾会把它
-  // 用 onPreTransformDraw 的赋值逻辑覆盖成 undefined，必须构造后再赋值
-  graphics.onPreDraw = () => {
-    const w = scene.engine.screen.drawWidth;
-    const h = scene.engine.screen.drawHeight;
-    const height = getHeight(h);
-    if (rect.width !== w) rect.width = w;
-    if (rect.height !== height) rect.height = height;
-  };
   return new Entity({
     name,
     components: [transform, graphics],

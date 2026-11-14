@@ -15,7 +15,10 @@ export class ResetSystem extends WithGameStateFilter(System) {
   private keyboard!: Keyboard;
   private scene!: Scene;
 
-  override onInitialize(_world: World, scene: Scene): void {
+  protected override onGameStateFilterInitialize(
+    _world: World,
+    scene: Scene,
+  ): void {
     this.scene = scene;
     this.keyboard = scene.input.keyboard;
   }

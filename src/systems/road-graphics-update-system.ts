@@ -38,7 +38,7 @@ export class RoadGraphicsUpdateSystem extends System {
   private turnQuery!: Query<typeof RoadTurnComponent>;
   private scene!: Scene;
 
-  override initialize(world: World, scene: Scene): void {
+  override onInitialize(world: World, scene: Scene): void {
     this.scene = scene;
     this.roadObjectQuery = world.query([
       RoadPositionComponent,
@@ -48,7 +48,7 @@ export class RoadGraphicsUpdateSystem extends System {
     this.turnQuery = world.query([RoadTurnComponent]);
   }
 
-  update(_elapsed: number): void {
+  override onUpdate(_elapsed: number): void {
     const camZ = getCameraPositionComponent(this.camQuery).roadDist;
     const turn = getRoadTurnComponent(this.turnQuery);
     const nextTurn = turn.nextTurn(camZ);

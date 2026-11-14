@@ -15,14 +15,15 @@ export function WithGameStateFilter<T extends AbstractConstructor<System>>(
     >;
     protected gameStateQuery!: Query<typeof GameStateComponent>;
 
-    onInitialize?(world: World, scene: Scene): void;
+    /** 子类初始化钩子（避免与 Excalibur 生命周期 onInitialize 混淆） */
+    protected onGameStateFilterInitialize?(world: World, scene: Scene): void;
 
-    override initialize(world: World, scene: Scene): void {
+    override onInitialize(world: World, scene: Scene): void {
       this.gameStateQuery = world.query([GameStateComponent]);
-      this.onInitialize?.(world, scene);
+      this.onGameStateFilterInitialize?.(world, scene);
     }
 
-    override update(elapsedMs: number): void {
+    override onUpdate(elapsedMs: number): void {
       const gameState = getGameStateComponent(this.gameStateQuery);
       const handler = this.gameStatusHandlers[gameState.gameStatus];
       handler?.(elapsedMs);

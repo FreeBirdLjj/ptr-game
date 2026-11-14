@@ -43,7 +43,10 @@ export class RunnerSystem extends WithGameStateFilter(System) {
   /** 上一次应用的 runner 视觉状态（用于从 dead 恢复时继续播放动画） */
   private lastRunnerState: RunnerGraphicsState = "running";
 
-  override onInitialize(world: World, scene: Scene): void {
+  protected override onGameStateFilterInitialize(
+    world: World,
+    scene: Scene,
+  ): void {
     this.scene = scene;
     this.keyboard = scene.input.keyboard;
     this.runnerQuery = world.query([

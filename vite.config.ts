@@ -4,9 +4,13 @@ export default defineConfig({
   base: "./",
   build: {
     outDir: "build",
+    sourcemap: true,
     rolldownOptions: {
       output: {
-        keepNames: true,
+        manualChunks(id) {
+          if (id.includes("node_modules/excalibur")) return "excalibur";
+          return undefined;
+        },
       },
     },
   },

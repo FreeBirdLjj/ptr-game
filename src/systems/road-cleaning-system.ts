@@ -24,7 +24,10 @@ export class RoadCleaningSystem extends WithGameStateFilter(System) {
   private camQuery!: Query<typeof CameraPositionComponent>;
   private turnQuery!: Query<typeof RoadTurnComponent>;
 
-  override onInitialize(world: World, _scene: Scene): void {
+  protected override onGameStateFilterInitialize(
+    world: World,
+    _scene: Scene,
+  ): void {
     this.roadPosQuery = world.query([RoadPositionComponent]);
     this.camQuery = world.query([CameraPositionComponent]);
     this.turnQuery = world.query([RoadTurnComponent]);

@@ -241,7 +241,7 @@ function advance(
   while (remaining > 0) {
     const dt = Math.min(step, remaining);
     camera.roadDist += speed * (dt / 1000);
-    system.update(dt);
+    system.onUpdate(dt);
     remaining -= dt;
   }
 }
@@ -252,8 +252,8 @@ describe("RoadConstructionSystem", () => {
   it("初始道路块坐标合法", () => {
     const { world, camera } = makeWorld();
     const system = new RoadConstructionSystem();
-    system.initialize(world as unknown as World, {} as Scene);
-    system.update(0);
+    system.onInitialize(world as unknown as World, {} as Scene);
+    system.onUpdate(0);
     const errors = validate(system, world, camera.roadDist, "init");
     expect(errors).toEqual([]);
     const tiles = getTiles(system, world, camera.roadDist);
@@ -263,7 +263,7 @@ describe("RoadConstructionSystem", () => {
   it("直行后坐标合法（未触发转弯）", () => {
     const { world, camera } = makeWorld();
     const system = new RoadConstructionSystem();
-    system.initialize(world as unknown as World, {} as Scene);
+    system.onInitialize(world as unknown as World, {} as Scene);
     advance(system, camera, 200, 5000);
     const errors = validate(system, world, camera.roadDist, "straight");
     expect(errors).toEqual([]);
@@ -272,7 +272,7 @@ describe("RoadConstructionSystem", () => {
   it("转弯后坐标合法", () => {
     const { world, camera } = makeWorld();
     const system = new RoadConstructionSystem();
-    system.initialize(world as unknown as World, {} as Scene);
+    system.onInitialize(world as unknown as World, {} as Scene);
     advance(system, camera, 200, 15000);
     const errors = validate(system, world, camera.roadDist, "after-turn");
     expect(errors).toEqual([]);
@@ -281,7 +281,7 @@ describe("RoadConstructionSystem", () => {
   it("转弯后继续运行，每行始终完整", () => {
     const { world, camera } = makeWorld();
     const system = new RoadConstructionSystem();
-    system.initialize(world as unknown as World, {} as Scene);
+    system.onInitialize(world as unknown as World, {} as Scene);
     advance(system, camera, 200, 15000);
     advance(system, camera, 200, 10000);
     const errors = validate(system, world, camera.roadDist, "after-scroll");
@@ -291,7 +291,7 @@ describe("RoadConstructionSystem", () => {
   it("连续多次转弯后坐标合法", () => {
     const { world, camera } = makeWorld();
     const system = new RoadConstructionSystem();
-    system.initialize(world as unknown as World, {} as Scene);
+    system.onInitialize(world as unknown as World, {} as Scene);
     for (let i = 0; i < 8; i++) {
       advance(system, camera, 200, 15000);
     }

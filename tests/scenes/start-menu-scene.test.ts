@@ -31,7 +31,11 @@ function installMock2dContext(): void {
 
 interface MockEngine {
   canvas: { width: number };
-  screen: { drawWidth: number };
+  screen: {
+    drawWidth: number;
+    // PointerSystem 计算 Screen 平面图形包围盒时会读取
+    contentAreaOffset: { x: number; y: number };
+  };
 }
 
 /** 手工装配最小 engine：onInitialize 只读取 engine.canvas.width 与 engine.screen.drawWidth */
@@ -71,7 +75,7 @@ describe("StartMenuScene UI layout", () => {
     // 桌面 DPR=1：canvas.width（物理像素）与 drawWidth（逻辑宽度）相等
     const scene = initializeScene({
       canvas: { width: 600 },
-      screen: { drawWidth: 600 },
+      screen: { drawWidth: 600, contentAreaOffset: { x: 0, y: 0 } },
     });
     const xs = collectXs(scene);
     expect(xs).toEqual([300, 300, 300]);
@@ -82,7 +86,7 @@ describe("StartMenuScene UI layout", () => {
     // UI 必须按逻辑宽度 300 定位；若误用物理宽度会定位到 900，全部落到画布右侧屏幕外
     const scene = initializeScene({
       canvas: { width: 1800 },
-      screen: { drawWidth: 600 },
+      screen: { drawWidth: 600, contentAreaOffset: { x: 0, y: 0 } },
     });
     const xs = collectXs(scene);
     expect(xs).toEqual([300, 300, 300]);

@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Scene, Entity, SystemType, Random } from "excalibur";
+import {
+  DebugSystem,
+  Entity,
+  GraphicsSystem,
+  OffscreenSystem,
+  PointerSystem,
+  Random,
+  Scene,
+  SystemType,
+} from "excalibur";
 import { SingletonEntity } from "../../src/entities/singleton-entity";
 import { RoadPositionComponent } from "../../src/components/road-position-component";
 import { CameraPositionComponent } from "../../src/components/singletons/camera-position-component";
@@ -44,6 +53,13 @@ HTMLCanvasElement.prototype.getContext = (() =>
   )) as never;
 
 const FRAME_MS = 33; // 游戏 maxFps=30
+
+const UNUSED_SYSTEM_TYPES = [
+  PointerSystem,
+  GraphicsSystem,
+  OffscreenSystem,
+  DebugSystem,
+] as const;
 
 // triggerGameOver 的 mock 状态：碰撞测试置为 no-op（让 runner 继续前进以覆盖转弯后的障碍）；
 // 计分测试调用原版（保留防重/瞬移/计分，计分经 scoreboard mock 记录）
@@ -99,20 +115,10 @@ function makeBaseScene(systems: unknown[]): Scene {
     screen: { drawWidth: 600, drawHeight: 800, pixelRatio: 1 },
     stats: { currFrame: { actors: { killed: 0 }, systemDuration: {} } },
   };
-  const systemManager = scene.world.systemManager as unknown as {
-    systems: unknown[];
-    removeSystem(system: unknown): void;
-    initialize(): void;
-  };
+  const systemManager = scene.world.systemManager;
   for (const system of [...systemManager.systems]) {
-    const name = (system as { constructor: { name: string } }).constructor.name;
     if (
-      [
-        "PointerSystem",
-        "GraphicsSystem",
-        "OffscreenSystem",
-        "DebugSystem",
-      ].includes(name)
+      UNUSED_SYSTEM_TYPES.some((systemType) => system instanceof systemType)
     ) {
       systemManager.removeSystem(system);
     }

@@ -50,7 +50,10 @@ export class MovingSystem extends WithGameStateFilter(System) {
   >;
   private scene!: Scene;
 
-  override onInitialize(world: World, scene: Scene): void {
+  protected override onGameStateFilterInitialize(
+    world: World,
+    scene: Scene,
+  ): void {
     this.scene = scene;
     this.cameraQuery = world.query([CameraPositionComponent, MotionComponent]);
     this.runnerQuery = world.query([
