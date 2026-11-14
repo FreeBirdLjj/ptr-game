@@ -6,6 +6,11 @@ import ptJumpingUrl from "../../assets/images/pt-jumping.png";
 import ptCrouchingUrl from "../../assets/images/pt-crouching.png";
 import turningBackgroundUrl from "../../assets/images/turning-background.png";
 
+/** Assets 注册表：叶子是 Loadable 资源，分支是嵌套目录 */
+interface AssetTree {
+  readonly [key: string]: Loadable<unknown> | AssetTree;
+}
+
 /**
  * 资源注册表：集中声明 assets 目录下的所有资源。
  *
@@ -32,7 +37,7 @@ export const Assets = {
     ptCrouching: new ImageSource(ptCrouchingUrl),
     turningBackground: new ImageSource(turningBackgroundUrl),
   },
-} as const;
+} as const satisfies AssetTree;
 
 /** 鸭子类型判断：是否实现了 Loadable 接口（load/isLoaded），不绑定具体资源类型 */
 function isLoadable(value: unknown): value is Loadable<unknown> {
@@ -41,26 +46,35 @@ function isLoadable(value: unknown): value is Loadable<unknown> {
   }
   const record = value as Record<string, unknown>;
   return (
-    typeof record.load === "function" && typeof record.isLoaded === "function"
+    typeof record.load === "function" && typeof record.isLoaded === "boolean"
   );
 }
 
-/** 递归收集 Assets 中声明的全部 Loadable 资源（嵌套结构对应 assets 目录树） */
-function collectResources(obj: object): Loadable<unknown>[] {
-  const out: Loadable<unknown>[] = [];
-  for (const value of Object.values(obj)) {
+/** 只递归普通对象，避免误入资源实例的内部结构 */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const proto = Object.getPrototypeOf(value) as object | null;
+  return proto === Object.prototype || proto === null;
+}
+
+/** 惰性递归收集 Assets 中声明的全部 Loadable 资源（嵌套结构对应 assets 目录树） */
+function* collectResources(tree: AssetTree): Generator<Loadable<unknown>> {
+  for (const value of Object.values(tree)) {
     if (isLoadable(value)) {
-      out.push(value);
-    } else if (typeof value === "object" && value !== null) {
-      out.push(...collectResources(value as object));
+      yield value;
+    } else if (isPlainObject(value)) {
+      yield* collectResources(value);
+    } else {
+      throw new Error("Invalid asset registry entry");
     }
   }
-  return out;
 }
 
 /** 全部资源列表，用于构建 Loader */
 export function allResources(): Loadable<unknown>[] {
-  return collectResources(Assets);
+  return [...collectResources(Assets)];
 }
 
 /** 启动断言：全部资源必须加载成功，否则抛出带路径的错误 */
