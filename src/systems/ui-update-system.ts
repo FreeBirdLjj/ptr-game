@@ -35,7 +35,7 @@ export class UIUpdateSystem extends System {
   private boardQuery!: Query<typeof GraphicsComponent>;
   private lastStatus: GameStatus | undefined;
 
-  override initialize(world: World, _scene: Scene): void {
+  override onInitialize(world: World, _scene: Scene): void {
     this.gameStateQuery = world.query([GameStateComponent]);
     // tag 与实体 name 同名（见 world.ts 的 addTag）
     this.scoreQuery = world.query({
@@ -48,7 +48,7 @@ export class UIUpdateSystem extends System {
     });
   }
 
-  update(_elapsed: number): void {
+  override onUpdate(_elapsed: number): void {
     const gameState = getGameStateComponent(this.gameStateQuery);
     const status = gameState.gameStatus;
     const score = gameState.totalScore;

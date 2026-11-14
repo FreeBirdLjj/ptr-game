@@ -223,8 +223,8 @@ describe("RoadConstructionSystem 10-turn endurance", () => {
   it("10 次转弯全程坐标合法", () => {
     const { world, camera, turn } = makeWorld();
     const system = new RoadConstructionSystem();
-    system.initialize(world as unknown as World, {} as Scene);
-    system.update(0);
+    system.onInitialize(world as unknown as World, {} as Scene);
+    system.onUpdate(0);
     let prevTurnRd = turn.nextTurn(camera.roadDist).roadDist;
     let turnCount = 0;
     const errors: string[] = [];
@@ -234,7 +234,7 @@ describe("RoadConstructionSystem 10-turn endurance", () => {
 
     while (turnCount < 10 && step < 200000) {
       camera.roadDist += 200 * (16 / 1000);
-      system.update(16);
+      system.onUpdate(16);
       step++;
 
       if (turn.nextTurn(camera.roadDist).roadDist !== prevTurnRd) {

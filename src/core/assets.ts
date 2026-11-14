@@ -66,9 +66,9 @@ export function allResources(): Loadable<unknown>[] {
 /** 启动断言：全部资源必须加载成功，否则抛出带路径的错误 */
 export function ensureAllResourceLoaded(): void {
   for (const resource of allResources()) {
-    if (!resource.isLoaded()) {
+    if (!resource.isLoaded) {
       const path = (resource as { path?: unknown }).path;
-      const label = typeof path === "string" ? path : resource.constructor.name;
+      const label = typeof path === "string" ? path : "unknown resource";
       throw new Error(`Failed to load resource: ${label}`);
     }
   }
