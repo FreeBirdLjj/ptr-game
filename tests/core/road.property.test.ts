@@ -223,7 +223,7 @@ describe("RoadConstructionSystem 10-turn endurance", () => {
   it("10 次转弯全程坐标合法", () => {
     const { world, camera, turn } = makeWorld();
     const system = new RoadConstructionSystem();
-    system.onInitialize(world as unknown as World, {} as Scene);
+    system.onInitialize(world as unknown as World, new Scene());
     system.onUpdate(0);
     let prevTurnRd = turn.nextTurn(camera.roadDist).roadDist;
     let turnCount = 0;
