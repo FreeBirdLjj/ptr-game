@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { type Graphic, type Vector } from "excalibur";
+import { Graphic, type Vector } from "excalibur";
 import { RoadGraphicsComponent } from "../../src/components/road-graphics-component";
 import { RoadEntity } from "../../src/entities/road-entity";
 import { RoadProjection } from "../../src/core/road-projection";
 import { AbsoluteProjection } from "../../src/core/absolute-projection";
 
-const fakeTexture = { width: 100, height: 100 } as Graphic;
+/** 测试纹理：Quadrilateral 构造时只读取 width/height，不实际绘制 */
+class FakeTexture extends Graphic {
+  protected _drawImage(): void {
+    throw new Error("FakeTexture 不参与绘制");
+  }
+}
+
+const fakeTexture = new FakeTexture({ width: 100, height: 100 });
 
 const QUAD_OPTIONS = {
   priority: 0,

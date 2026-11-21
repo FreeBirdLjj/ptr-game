@@ -163,6 +163,9 @@ export function setupWorldSystems(world: World): void {
     new UIUpdateSystem(),
     new ResetSystem(),
   ]) {
+    // WithGameStateFilter 是泛型 mixin（基类是类型参数），新规则无法沿泛型
+    // 基类追踪到 System 的名义继承；这里的实例运行时确实由 System 构造链创建。
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-class-instance-assignment
     world.add(system);
   }
 }
