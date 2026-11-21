@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       excalibur:
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^1.0.1
+        version: 1.0.1
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -440,8 +440,8 @@ packages:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
 
-  excalibur@1.0.0:
-    resolution: {integrity: sha512-aMBRF59ocEzfGkdN+LdO735ydZNktupK6x4OWCZSqbgMP7GQsCx1wh3SD3kM2BRh9Q1IzEuZH5WrpoRb45uTeg==}
+  excalibur@1.0.1:
+    resolution: {integrity: sha512-/4xxECZbBQs5Eme3QQKjaWVTy8uynXrRl7gK7qvfjsHzLWaVrPmPIlYIFoEvu1N+BQkYHhVm8hDJWwI5wLLBOQ==}
 
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
@@ -1262,7 +1262,7 @@ snapshots:
 
   esutils@2.0.3: {}
 
-  excalibur@1.0.0: {}
+  excalibur@1.0.1: {}
 
   expect-type@1.4.0: {}
 
