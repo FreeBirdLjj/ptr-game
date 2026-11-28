@@ -7,9 +7,8 @@ export default defineConfig({
     sourcemap: true,
     rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes("node_modules/excalibur")) return "excalibur";
-          return undefined;
+        codeSplitting: {
+          groups: [{ name: "excalibur", test: /node_modules[\\/]excalibur/ }],
         },
       },
     },
